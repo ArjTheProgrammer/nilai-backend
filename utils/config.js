@@ -1,7 +1,12 @@
+const { Pool } = require('pg')
 require('dotenv').config()
 
 const PORT = process.env.PORT
+const pool = new Pool({
+  connectionString: process.env.DB_URI
+})
 
 module.exports = {
-  PORT
+  PORT,
+  pool
 }
