@@ -31,6 +31,7 @@ router.post('/signup', verifyToken, async (req, res) => {
 
     // Remove sensitive data before sending response
     const { ...userData } = user
+    delete userData.firebase_uid
 
     res.status(201).json({
       message: 'User created successfully',
@@ -68,6 +69,7 @@ router.post('/google', verifyToken, async (req, res) => {
       )
 
       const { ...userData } = user.rows[0]
+      delete userData.firebase_uid
 
       res.json({
         message: 'Login successful',
@@ -87,6 +89,7 @@ router.post('/google', verifyToken, async (req, res) => {
 
       const newUser = result.rows[0]
       const { ...userData } = newUser
+      delete userData.firebase_uid
 
       res.status(201).json({
         message: 'User created successfully',
@@ -121,6 +124,7 @@ router.get('/verify', verifyToken, async (req, res) => {
     )
 
     const { ...userData } = result.rows[0]
+    delete userData.firebase_uid
 
     res.json({
       message: 'Token verified',
