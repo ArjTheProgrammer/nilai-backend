@@ -4,9 +4,9 @@
   "description": "backend for nilai journaling application",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node --watch index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "NODE_ENV=production node index.js",
+    "dev": "NODE_ENV=development node --watch index.js",
+    "test": "NODE_ENV=test node --test",
     "lint": "eslint ."
   },
   "author": "Jose Neil Silagan Jr.",
@@ -15,6 +15,7 @@
     "axios": "^1.10.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
+    "cross-env": "^7.0.3",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "firebase-admin": "^13.4.0",
@@ -25,6 +26,7 @@
   "devDependencies": {
     "@eslint/js": "^9.29.0",
     "@stylistic/eslint-plugin-js": "^4.4.1",
-    "eslint": "^9.29.0"
+    "eslint": "^9.29.0",
+    "supertest": "^7.1.3"
   }
 }
