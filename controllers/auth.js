@@ -1,10 +1,10 @@
 const express = require('express')
-const router = express.Router()
-const pool = require('../database')
-const { verifyToken } = require('../middleware/auth')
+const authRouter = express.Router()
+const { pool } = require('../utils/config')
+const { verifyToken } = require('../utils/auth')
 
 // POST /api/auth/signup - Create new user with email
-router.post('/signup', verifyToken, async (req, res) => {
+authRouter.post('/signup', verifyToken, async (req, res) => {
   const { firstName, lastName, username, email, authProvider } = req.body
   const firebaseUid = req.user.uid
 
@@ -50,7 +50,7 @@ router.post('/signup', verifyToken, async (req, res) => {
 })
 
 // POST /api/auth/google - Handle Google OAuth
-router.post('/google', verifyToken, async (req, res) => {
+authRouter.post('/google', verifyToken, async (req, res) => {
   const { email, firstName, lastName, googleId, googleAvatarUrl, authProvider } = req.body
   const firebaseUid = req.user.uid
 
@@ -104,7 +104,7 @@ router.post('/google', verifyToken, async (req, res) => {
 })
 
 // GET /api/auth/verify - Verify token and get user data
-router.get('/verify', verifyToken, async (req, res) => {
+authRouter.get('/verify', verifyToken, async (req, res) => {
   try {
     const firebaseUid = req.user.uid
 
@@ -137,4 +137,4 @@ router.get('/verify', verifyToken, async (req, res) => {
   }
 })
 
-module.exports = router
+module.exports = authRouter
