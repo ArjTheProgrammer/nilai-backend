@@ -3,6 +3,8 @@ const supertest = require('supertest')
 const app = require('../app')
 const { pool } = require('../utils/config')
 const admin = require('../firebaseAdmin')
+const { getEmotion } = require('../utils/services/emotion')
+const assert = require('assert')
 
 const api = supertest(app)
 
@@ -86,7 +88,7 @@ describe('Journal Tests', () => {
     }
   })
 
-  test.only('should create a journal entry', async () => {
+  test('should create a journal entry', async () => {
     const sampleJournal = {
       user_id: userId,
       title: 'Sample Journal Title',
@@ -116,7 +118,7 @@ describe('Journal Tests', () => {
     console.assert(dbEntry.rows[0].title === sampleJournal.title, 'Title should match in DB')
   })
 
-  test.only('should get all journal entries', async () => {
+  test('should get all journal entries', async () => {
     // First create a test journal entry
     const testJournal = {
       user_id: userId,
@@ -207,4 +209,10 @@ describe('Journal Tests', () => {
       return originalVerifyIdToken.call(admin.auth(), token)
     }
   })
+})
+
+test('test if the returned emotion is a array', async () => {
+  const emotions = await getEmotion('Hello I am happy to see you!')
+  console.log(emotions)
+  assert(Array.isArray(emotions), 'emotions should be an array')
 })

@@ -1,5 +1,6 @@
 const { verifyToken } = require('../utils/auth')
 const { pool } = require('../utils/config')
+const { getEmotion } = require('../utils/services/emotion')
 const journalRouter = require('express').Router()
 
 journalRouter.get('/', verifyToken, async (request, response) => {
@@ -26,7 +27,7 @@ journalRouter.get('/', verifyToken, async (request, response) => {
 journalRouter.post('/', verifyToken, async (request, response) => {
   try {
     const firebaseUid = request.user.uid
-    const { title, content, emotions } = request.body
+    const { title, content } = request.body
 
     if (!title || !content) {
       return response.status(400).json({ error: 'Missing required fields: title, content' })
@@ -42,6 +43,8 @@ journalRouter.post('/', verifyToken, async (request, response) => {
     const userId = userResult.rows[0].id
 
     // Handle emotions properly for PostgreSQL JSONB
+    const emotions = await getEmotion(content)
+
     const emotionsJson = emotions ? JSON.stringify(emotions) : null
 
     const journalQuery = await pool.query(

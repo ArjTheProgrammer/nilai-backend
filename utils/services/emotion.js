@@ -1,8 +1,8 @@
 const axios = require('./axios.js')
 const baseUrl = '/emotions'
 
-const getEmotion = async () => {
-  const response = await axios.post(baseUrl, { text: 'I am happy today!' })
+const getEmotion = async (content) => {
+  const response = await axios.post(baseUrl, { text: content })
   return response.data
 }
 
