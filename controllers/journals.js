@@ -4,7 +4,18 @@ const journalRouter = require('express').Router()
 
 journalRouter.get('/', verifyToken, async (request, response) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM journal_entries')
+    // Get user_id from authenticated user
+    const firebaseUid = request.user.uid
+
+    const userResult = await pool.query('SELECT id FROM users WHERE firebase_uid = $1', [firebaseUid])
+
+    if (userResult.rows.length === 0) {
+      return response.status(404).json({ error: 'User not found' })
+    }
+
+    const userId = userResult.rows[0].id
+
+    const { rows } = await pool.query('SELECT * FROM journal_entries WHERE user_id = $1 ORDER BY created_at DESC', [userId])
     response.json(rows)
   } catch (error) {
     console.error('Error fetching journals:', error)
@@ -14,18 +25,30 @@ journalRouter.get('/', verifyToken, async (request, response) => {
 
 journalRouter.post('/', verifyToken, async (request, response) => {
   try {
-    const journalBody = request.body
+    const firebaseUid = request.user.uid
+    const { title, content, emotions } = request.body
 
-    const { user_id, title, content, emotions } = journalBody
-    if (!user_id || !title || !content) {
-      return response.status(400).json({ error: 'Missing required fields: user_id, title, content' })
+    if (!title || !content) {
+      return response.status(400).json({ error: 'Missing required fields: title, content' })
     }
+
+    // Get user_id from authenticated user instead of request body
+    const userResult = await pool.query('SELECT id FROM users WHERE firebase_uid = $1', [firebaseUid])
+
+    if (userResult.rows.length === 0) {
+      return response.status(404).json({ error: 'User not found' })
+    }
+
+    const userId = userResult.rows[0].id
+
+    // Handle emotions properly for PostgreSQL JSONB
+    const emotionsJson = emotions ? JSON.stringify(emotions) : null
 
     const journalQuery = await pool.query(
       `INSERT INTO journal_entries(user_id, title, content, emotions)
-       VALUES ($1, $2, $3, $4)
+       VALUES ($1, $2, $3, $4::jsonb)
        RETURNING *`,
-      [user_id, title, content, emotions]
+      [userId, title, content, emotionsJson]
     )
 
     response.status(201).json(journalQuery.rows[0])
