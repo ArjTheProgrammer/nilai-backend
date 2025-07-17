@@ -105,11 +105,10 @@ test.only('should create a journal entry', async () => {
 
   console.assert(response.body.title === sampleJournal.title, 'Title should match')
   console.assert(response.body.content === sampleJournal.content, 'Content should match')
-  console.assert(response.body.user_id === userId, 'User ID should match')
   console.assert(Array.isArray(response.body.emotions), 'Emotions should be an array')
 
   // Verify in database
-  const dbEntry = await pool.query('SELECT * FROM journal_entries WHERE id = $1', [response.body.id])
+  const dbEntry = await pool.query('SELECT * FROM journal_entries WHERE journal_id = $1', [response.body.journal_id])
   console.log(dbEntry.rows[0])
   console.assert(dbEntry.rows.length === 1, 'Journal entry should exist in database')
   console.assert(dbEntry.rows[0].title === sampleJournal.title, 'Title should match in DB')

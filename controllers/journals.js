@@ -8,13 +8,13 @@ journalRouter.get('/', verifyToken, async (request, response) => {
     // Get user_id from authenticated user
     const firebaseUid = request.user.uid
 
-    const userResult = await pool.query('SELECT id FROM users WHERE firebase_uid = $1', [firebaseUid])
+    const userResult = await pool.query('SELECT user_id FROM users WHERE firebase_uid = $1', [firebaseUid])
 
     if (userResult.rows.length === 0) {
       return response.status(404).json({ error: 'User not found' })
     }
 
-    const userId = userResult.rows[0].id
+    const userId = userResult.rows[0].user_id
 
     const { rows } = await pool.query('SELECT * FROM journal_entries WHERE user_id = $1 ORDER BY created_at DESC', [userId])
     response.json(rows)
@@ -34,13 +34,13 @@ journalRouter.post('/', verifyToken, async (request, response) => {
     }
 
     // Get user_id from authenticated user instead of request body
-    const userResult = await pool.query('SELECT id FROM users WHERE firebase_uid = $1', [firebaseUid])
+    const userResult = await pool.query('SELECT user_id FROM users WHERE firebase_uid = $1', [firebaseUid])
 
     if (userResult.rows.length === 0) {
       return response.status(404).json({ error: 'User not found' })
     }
 
-    const userId = userResult.rows[0].id
+    const userId = userResult.rows[0].user_id
 
     // Handle emotions properly for PostgreSQL JSONB
     const emotions = await getEmotion(content)
@@ -50,7 +50,7 @@ journalRouter.post('/', verifyToken, async (request, response) => {
     const journalQuery = await pool.query(
       `INSERT INTO journal_entries(user_id, title, content, emotions)
        VALUES ($1, $2, $3, $4::jsonb)
-       RETURNING *`,
+       RETURNING journal_id, title, content, emotions`,
       [userId, title, content, emotionsJson]
     )
 
