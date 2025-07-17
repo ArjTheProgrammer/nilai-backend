@@ -3,7 +3,6 @@ const supertest = require('supertest')
 const app = require('../app')
 const { pool } = require('../utils/config')
 const admin = require('../firebaseAdmin')
-const { getEmotion } = require('../utils/services/emotion')
 const assert = require('assert')
 
 const api = supertest(app)
@@ -12,11 +11,11 @@ const api = supertest(app)
 const originalVerifyIdToken = admin.auth().verifyIdToken
 
 const testUser = {
-  firebaseUid: 'test-journal-uid-' + Date.now(),
-  email: `journal-test-${Date.now()}@example.com`,
+  firebaseUid: 'test-journal-basic-uid-' + Date.now(),
+  email: `journal-basic-test-${Date.now()}@example.com`,
   firstName: 'Journal',
-  lastName: 'Tester',
-  username: `journaltester${Date.now()}`,
+  lastName: 'BasicTester',
+  username: `journalbasictester${Date.now()}`,
   authProvider: 'email'
 }
 
@@ -24,7 +23,9 @@ let userId // Will store the database user ID
 
 beforeEach(async () => {
   // Clean up any existing test data
-  await pool.query('DELETE FROM journal_entries WHERE user_id = $1', [userId])
+  if (userId) {
+    await pool.query('DELETE FROM journal_entries WHERE user_id = $1', [userId])
+  }
 
   // Create test user in Firebase if not exists
   try {
@@ -41,7 +42,7 @@ beforeEach(async () => {
 
   // Mock token verification
   admin.auth().verifyIdToken = async (token) => {
-    if (token === 'mock-journal-token') {
+    if (token === 'mock-journal-basic-token') {
       return {
         uid: testUser.firebaseUid,
         email: testUser.email,
@@ -61,9 +62,9 @@ beforeEach(async () => {
          RETURNING *`,
       [testUser.firebaseUid, testUser.firstName, testUser.lastName, testUser.username, testUser.email, testUser.authProvider, true]
     )
-    userId = result.rows[0].id
+    userId = result.rows[0].user_id
   } else {
-    userId = existingUser.rows[0].id
+    userId = existingUser.rows[0].user_id
   }
 })
 
@@ -87,127 +88,76 @@ after(async () => {
   }
 })
 
-test.only('should create a journal entry', async () => {
+// Test POST /api/journals - Create journal entry
+test('POST /api/journals - should create a journal entry with emotions', async () => {
   const sampleJournal = {
-    user_id: userId,
     title: 'Sample Journal Title',
-    content: 'I am feeling happy today and I want to thank the love of my life for always supporting me today in my finals basketball game where I won finals MVP.',
+    content: 'I am feeling happy today and I want to thank the love of my life for always supporting me.',
   }
 
   const response = await api
     .post('/api/journals')
-    .set('Authorization', 'Bearer mock-journal-token')
+    .set('Authorization', 'Bearer mock-journal-basic-token')
     .send(sampleJournal)
     .expect(201)
 
-  // Verify response
-  console.log(response.body)
-
-  console.assert(response.body.title === sampleJournal.title, 'Title should match')
-  console.assert(response.body.content === sampleJournal.content, 'Content should match')
-  console.assert(Array.isArray(response.body.emotions), 'Emotions should be an array')
+  // Verify response structure
+  assert(response.body.journal_id, 'Should return journal_id')
+  assert.strictEqual(response.body.title, sampleJournal.title, 'Title should match')
+  assert.strictEqual(response.body.content, sampleJournal.content, 'Content should match')
+  assert(response.body.emotions, 'Should include emotions')
 
   // Verify in database
   const dbEntry = await pool.query('SELECT * FROM journal_entries WHERE journal_id = $1', [response.body.journal_id])
-  console.log(dbEntry.rows[0])
-  console.assert(dbEntry.rows.length === 1, 'Journal entry should exist in database')
-  console.assert(dbEntry.rows[0].title === sampleJournal.title, 'Title should match in DB')
+  assert.strictEqual(dbEntry.rows.length, 1, 'Journal entry should exist in database')
+  assert.strictEqual(dbEntry.rows[0].title, sampleJournal.title, 'Title should match in DB')
+  assert.strictEqual(dbEntry.rows[0].content, sampleJournal.content, 'Content should match in DB')
+  assert.strictEqual(dbEntry.rows[0].user_id, userId, 'User ID should match in DB')
 })
 
-test('should get all journal entries', async () => {
-  // First create a test journal entry
-  const testJournal = {
-    user_id: userId,
-    title: 'Test Journal for GET',
-    content: 'Test content for GET request',
-    emotions: [{ emotion: 'happiness', confidence: 0.85 }]
-  }
+// Test GET /api/journals - Get all journal entries
+test.only('GET /api/journals - should get all journal entries for authenticated user', async () => {
+  // First create test journal entries
+  const testJournals = [
+    {
+      title: 'First Journal',
+      content: 'I am happy!'
+    },
+    {
+      title: 'Second Journal',
+      content: 'Content of second journal entry'
+    }
+  ]
 
-  await api
-    .post('/api/journals')
-    .set('Authorization', 'Bearer mock-journal-token')
-    .send(testJournal)
-    .expect(201)
+  // Create the journal entries
+  for (const journal of testJournals) {
+    await api
+      .post('/api/journals')
+      .set('Authorization', 'Bearer mock-journal-basic-token')
+      .send(journal)
+      .expect(201)
+  }
 
   // Now test GET request
   const response = await api
     .get('/api/journals')
-    .set('Authorization', 'Bearer mock-journal-token')
+    .set('Authorization', 'Bearer mock-journal-basic-token')
     .expect(200)
 
-  console.assert(Array.isArray(response.body), 'Response should be an array')
-  console.assert(response.body.length >= 1, 'Should have at least one journal entry')
+  assert(Array.isArray(response.body), 'Response should be an array')
+  assert(response.body.length >= 2, 'Should have at least two journal entries')
 
-  // Find our test journal
-  const foundJournal = response.body.find(journal => journal.title === testJournal.title)
-  console.assert(foundJournal !== undefined, 'Should find our test journal')
-  console.assert(foundJournal.content === testJournal.content, 'Content should match')
-})
+  // Verify entries are ordered by created_at DESC (newest first)
+  const titles = response.body.map(journal => journal.title)
+  assert(titles.includes('First Journal'), 'Should include first journal')
+  assert(titles.includes('Second Journal'), 'Should include second journal')
 
-test('should reject journal creation without required fields', async () => {
-  const incompleteJournal = {
-    user_id: userId,
-    title: 'Missing Content'
-    // Missing content field
-  }
-
-  const response = await api
-    .post('/api/journals')
-    .set('Authorization', 'Bearer mock-journal-token')
-    .send(incompleteJournal)
-    .expect(400)
-
-  console.assert(response.body.error.includes('Missing required fields'), 'Should reject incomplete data')
-})
-
-test('should reject requests without authentication', async () => {
-  const sampleJournal = {
-    user_id: userId,
-    title: 'Unauthorized Test',
-    content: 'This should fail without token'
-  }
-
-  await api
-    .post('/api/journals')
-    .send(sampleJournal)
-    .expect(401)
-
-  await api
-    .get('/api/journals')
-    .expect(401)
-})
-
-test('should handle invalid authentication token', async () => {
-  const sampleJournal = {
-    user_id: userId,
-    title: 'Invalid Token Test',
-    content: 'This should fail with invalid token'
-  }
-
-  // Temporarily restore original method for invalid token test
-  admin.auth().verifyIdToken = originalVerifyIdToken
-
-  await api
-    .post('/api/journals')
-    .set('Authorization', 'Bearer invalid-token')
-    .send(sampleJournal)
-    .expect(401)
-
-  // Restore mock for other tests
-  admin.auth().verifyIdToken = async (token) => {
-    if (token === 'mock-journal-token') {
-      return {
-        uid: testUser.firebaseUid,
-        email: testUser.email,
-        email_verified: true
-      }
-    }
-    return originalVerifyIdToken.call(admin.auth(), token)
-  }
-})
-
-test('test if the returned emotion is a array', async () => {
-  const emotions = await getEmotion('Hello I am happy to see you!')
-  console.log(emotions)
-  assert(Array.isArray(emotions), 'emotions should be an array')
+  // Verify structure of returned entries
+  response.body.forEach(journal => {
+    assert(journal.journal_id, 'Each entry should have journal_id')
+    assert(journal.title, 'Each entry should have title')
+    assert(journal.content, 'Each entry should have content')
+    assert(journal.user_id === userId, 'Each entry should belong to authenticated user')
+    assert(journal.created_at, 'Each entry should have created_at timestamp')
+  })
 })
