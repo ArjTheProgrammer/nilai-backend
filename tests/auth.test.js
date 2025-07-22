@@ -3,57 +3,27 @@ const supertest = require('supertest')
 const app = require('../app')
 const { pool } = require('../utils/config')
 const admin = require('../firebaseAdmin')
+const { cleanupAllTestUsers } = require('./cleanup')
 
 const api = supertest(app)
 
 // Store original method to restore later
 const originalVerifyIdToken = admin.auth().verifyIdToken
 
-// Clean up function to delete test users from Firebase
-const deleteFirebaseUser = async (uid) => {
-  try {
-    await admin.auth().deleteUser(uid)
-    console.log(`Deleted Firebase user: ${uid}`)
-  } catch (error) {
-    if (error.code !== 'auth/user-not-found') {
-      console.error('Error deleting Firebase user:', error)
-    }
-  }
-}
-
-// Clean up function to delete test users from database
-const deleteDbUser = async (firebaseUid) => {
-  try {
-    await pool.query('DELETE FROM users WHERE firebase_uid = $1', [firebaseUid])
-    console.log(`Deleted DB user: ${firebaseUid}`)
-  } catch (error) {
-    console.error('Error deleting DB user:', error)
-  }
-}
-
 describe('Authentication Tests', () => {
   const testUsers = []
 
   // Clean up after all tests
   after(async () => {
-    console.log('Cleaning up test users...')
+    console.log('Cleaning up authentication tests...')
 
     // Restore original method
     admin.auth().verifyIdToken = originalVerifyIdToken
 
-    // Delete from database first
-    for (const user of testUsers) {
-      await deleteDbUser(user.firebaseUid)
-    }
+    // Use shared cleanup utility
+    await cleanupAllTestUsers()
 
-    // Then delete from Firebase
-    for (const user of testUsers) {
-      await deleteFirebaseUser(user.firebaseUid)
-    }
-
-    // Close database connection
-    await pool.end()
-    console.log('Cleanup completed')
+    console.log('Authentication test cleanup completed')
   })
 
   describe('Email/Password Authentication', () => {
