@@ -5,7 +5,7 @@ const { verifyToken } = require('../utils/auth')
 
 // POST /api/auth/signup - Create new user with email
 authRouter.post('/signup', verifyToken, async (req, res) => {
-  const { firstName, lastName, username, email, authProvider } = req.body
+  const { name, username, email, authProvider } = req.body
   const firebaseUid = req.user.uid
 
   try {
@@ -21,10 +21,10 @@ authRouter.post('/signup', verifyToken, async (req, res) => {
 
     // Create new user
     const result = await pool.query(
-      `INSERT INTO users (firebase_uid, first_name, last_name, username, email, auth_provider, email_verified)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO users (firebase_uid, name, username, email, auth_provider, email_verified)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [firebaseUid, firstName, lastName, username, email, authProvider, req.user.email_verified]
+      [firebaseUid, name, username, email, authProvider, req.user.email_verified]
     )
 
     const user = result.rows[0]
@@ -51,7 +51,7 @@ authRouter.post('/signup', verifyToken, async (req, res) => {
 
 // POST /api/auth/google - Handle Google OAuth
 authRouter.post('/google', verifyToken, async (req, res) => {
-  const { email, firstName, lastName, googleId, googleAvatarUrl, authProvider } = req.body
+  const { email, name, googleId, googleAvatarUrl, authProvider } = req.body
   const firebaseUid = req.user.uid
 
   try {
@@ -81,10 +81,10 @@ authRouter.post('/google', verifyToken, async (req, res) => {
       const username = email.split('@')[0] + Math.random().toString(36).substring(2, 6)
 
       const result = await pool.query(
-        `INSERT INTO users (firebase_uid, first_name, last_name, username, email, auth_provider, google_id, google_avatar_url, email_verified, profile_picture_url)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        `INSERT INTO users (firebase_uid, name, username, email, auth_provider, google_id, google_avatar_url, email_verified, profile_picture_url)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING *`,
-        [firebaseUid, firstName, lastName, username, email, authProvider, googleId, googleAvatarUrl, true, googleAvatarUrl]
+        [firebaseUid, name, username, email, authProvider, googleId, googleAvatarUrl, true, googleAvatarUrl]
       )
 
       const newUser = result.rows[0]

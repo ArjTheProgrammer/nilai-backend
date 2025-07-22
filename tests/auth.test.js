@@ -31,8 +31,7 @@ describe('Authentication Tests', () => {
       const testUser = {
         firebaseUid: 'test-email-uid-' + Date.now(),
         email: `test-${Date.now()}@example.com`,
-        firstName: 'John',
-        lastName: 'Doe',
+        name: 'John Doe', // Changed from firstName and lastName
         username: `testuser${Date.now()}`,
         authProvider: 'email'
       }
@@ -62,8 +61,7 @@ describe('Authentication Tests', () => {
         .post('/api/auth/signup')
         .set('Authorization', 'Bearer mock-token')
         .send({
-          firstName: testUser.firstName,
-          lastName: testUser.lastName,
+          name: testUser.name, // Changed from firstName and lastName
           username: testUser.username,
           email: testUser.email,
           authProvider: testUser.authProvider
@@ -72,8 +70,7 @@ describe('Authentication Tests', () => {
 
       // Verify response
       const { user } = response.body
-      console.assert(user.first_name === testUser.firstName, 'First name should match')
-      console.assert(user.last_name === testUser.lastName, 'Last name should match')
+      console.assert(user.name === testUser.name, 'Name should match') // Changed assertion
       console.assert(user.username === testUser.username, 'Username should match')
       console.assert(user.email === testUser.email, 'Email should match')
       console.assert(user.auth_provider === testUser.authProvider, 'Auth provider should match')
@@ -91,8 +88,7 @@ describe('Authentication Tests', () => {
       const testUser = {
         firebaseUid: 'test-duplicate-uid-' + Date.now(),
         email: baseEmail,
-        firstName: 'Jane',
-        lastName: 'Doe',
+        name: 'Jane Doe', // Changed from firstName and lastName
         username: `duplicateuser${Date.now()}`,
         authProvider: 'email'
       }
@@ -123,8 +119,7 @@ describe('Authentication Tests', () => {
         .post('/api/auth/signup')
         .set('Authorization', 'Bearer mock-token-duplicate')
         .send({
-          firstName: testUser.firstName,
-          lastName: testUser.lastName,
+          name: testUser.name, // Changed from firstName and lastName
           username: testUser.username,
           email: testUser.email,
           authProvider: testUser.authProvider
@@ -171,8 +166,7 @@ describe('Authentication Tests', () => {
         .post('/api/auth/signup')
         .set('Authorization', 'Bearer mock-token-duplicate-2')
         .send({
-          firstName: 'Another',
-          lastName: 'User',
+          name: 'Another User', // Changed from firstName and lastName
           username: secondUser.username,
           email: baseEmail, // Same email should be rejected
           authProvider: 'email'
@@ -188,8 +182,7 @@ describe('Authentication Tests', () => {
       const testUser = {
         firebaseUid: 'test-google-uid-' + Date.now(),
         email: `google-${Date.now()}@gmail.com`,
-        firstName: 'Google',
-        lastName: 'User',
+        name: 'Google User',
         googleId: 'google-id-' + Date.now(),
         googleAvatarUrl: 'https://example.com/avatar.jpg',
         authProvider: 'google'
@@ -202,7 +195,7 @@ describe('Authentication Tests', () => {
         uid: testUser.firebaseUid,
         email: testUser.email,
         emailVerified: true,
-        displayName: `${testUser.firstName} ${testUser.lastName}`,
+        displayName: testUser.name,
         photoURL: testUser.googleAvatarUrl
       })
 
@@ -223,8 +216,7 @@ describe('Authentication Tests', () => {
         .set('Authorization', 'Bearer mock-google-token')
         .send({
           email: testUser.email,
-          firstName: testUser.firstName,
-          lastName: testUser.lastName,
+          name: testUser.name, // Changed from firstName and lastName
           googleId: testUser.googleId,
           googleAvatarUrl: testUser.googleAvatarUrl,
           authProvider: testUser.authProvider
@@ -233,8 +225,7 @@ describe('Authentication Tests', () => {
 
       // Verify response
       const { user } = response.body
-      console.assert(user.first_name === testUser.firstName, 'First name should match')
-      console.assert(user.last_name === testUser.lastName, 'Last name should match')
+      console.assert(user.name === testUser.name, 'Name should match') // Changed from first_name and last_name assertions
       console.assert(user.email === testUser.email, 'Email should match')
       console.assert(user.auth_provider === testUser.authProvider, 'Auth provider should match')
       console.assert(user.google_id === testUser.googleId, 'Google ID should match')
@@ -251,8 +242,7 @@ describe('Authentication Tests', () => {
       const testUser = {
         firebaseUid: 'test-existing-google-uid-' + Date.now(),
         email: `existing-google-${Date.now()}@gmail.com`,
-        firstName: 'Existing',
-        lastName: 'GoogleUser',
+        name: 'Existing GoogleUser', // Changed from firstName and lastName
         googleId: 'existing-google-id-' + Date.now(),
         googleAvatarUrl: 'https://example.com/existing-avatar.jpg',
         authProvider: 'google'
@@ -285,8 +275,7 @@ describe('Authentication Tests', () => {
         .set('Authorization', 'Bearer mock-existing-google-token')
         .send({
           email: testUser.email,
-          firstName: testUser.firstName,
-          lastName: testUser.lastName,
+          name: testUser.name, // Changed from firstName and lastName
           googleId: testUser.googleId,
           googleAvatarUrl: testUser.googleAvatarUrl,
           authProvider: testUser.authProvider
@@ -301,8 +290,7 @@ describe('Authentication Tests', () => {
         .set('Authorization', 'Bearer mock-existing-google-token')
         .send({
           email: testUser.email,
-          firstName: testUser.firstName,
-          lastName: testUser.lastName,
+          name: testUser.name, // Changed from firstName and lastName
           googleId: testUser.googleId,
           googleAvatarUrl: testUser.googleAvatarUrl,
           authProvider: testUser.authProvider
@@ -319,8 +307,7 @@ describe('Authentication Tests', () => {
       const testUser = {
         firebaseUid: 'test-verify-uid-' + Date.now(),
         email: `verify-${Date.now()}@example.com`,
-        firstName: 'Verify',
-        lastName: 'User',
+        name: 'Verify User', // Changed from firstName and lastName
         username: `verifyuser${Date.now()}`,
         authProvider: 'email'
       }
@@ -351,8 +338,7 @@ describe('Authentication Tests', () => {
         .post('/api/auth/signup')
         .set('Authorization', 'Bearer mock-verify-token')
         .send({
-          firstName: testUser.firstName,
-          lastName: testUser.lastName,
+          name: testUser.name, // Changed from firstName and lastName
           username: testUser.username,
           email: testUser.email,
           authProvider: testUser.authProvider
