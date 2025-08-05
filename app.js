@@ -13,6 +13,9 @@ app.use(express.json())
 
 console.log('Postgress has been intialize.')
 
+app.get('/', (req, res) => {
+  res.send('Hello World')
+})
 app.use('/api/journals', journalRouter)
 app.use('/api/auth', authRouter)
 

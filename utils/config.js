@@ -2,7 +2,7 @@ const { Pool } = require('pg')
 require('dotenv').config()
 
 // Create database connection
-const PORT = process.env.PORT
+const PORT = process.env.PORT || 3000
 const DB_URI = process.env.DB_URI_TEST
 
 const pool = new Pool({
