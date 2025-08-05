@@ -1,6 +1,6 @@
 const cron = require('node-cron')
-const pool = require('../db/pool')
-const axios = require('./axios.js') // Add this import
+const { pool } = require('../config')
+const axios = require('./axios.js')
 
 // Run every day at 12:00 AM
 cron.schedule('0 0 * * *', async () => {
@@ -104,4 +104,37 @@ async function generateDailySummaryForUser(userId, summaryDate) {
   }
 }
 
-module.exports = { generateDailySummariesForAllUsers, generateDailySummaryForUser }
+async function generateDailyQuote(userId) {
+  try {
+    // Get last 7 days of entries
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    
+    const entries = await pool.query(
+      'SELECT title, content, emotions, created_at FROM journal_entries WHERE user_id = $1 AND created_at >= $2 ORDER BY created_at DESC',
+      [userId, sevenDaysAgo]
+    )
+
+    if (entries.rows.length === 0) {
+      return null
+    }
+
+    // Call NLP service
+    const response = await fetch('http://localhost:8000/insights/quote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entries: entries.rows })
+    })
+
+    if (!response.ok) {
+      throw new Error(`NLP service responded with status: ${response.status}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error generating daily quote:', error)
+    return null
+  }
+}
+
+module.exports = { generateDailySummariesForAllUsers, generateDailySummaryForUser, generateDailyQuote }
