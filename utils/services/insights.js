@@ -119,18 +119,12 @@ async function generateDailyQuote(userId) {
       return null
     }
 
-    // Call NLP service
-    const response = await fetch('http://localhost:8000/insights/quote', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entries: entries.rows })
+    // Call NLP service using axios
+    const response = await axios.post('/insights/quote', {
+      entries: entries.rows
     })
 
-    if (!response.ok) {
-      throw new Error(`NLP service responded with status: ${response.status}`)
-    }
-
-    return await response.json()
+    return response.data
   } catch (error) {
     console.error('Error generating daily quote:', error)
     return null
