@@ -116,7 +116,7 @@ async function generateDailyQuote(userId) {
 
     // Call NLP service using axios
     const response = await axios.post('/insights/quote', {
-      entries: entries.rows.length > 0 ? entries.rows : []
+      entries: entries.rows
     })
 
     return response.data
