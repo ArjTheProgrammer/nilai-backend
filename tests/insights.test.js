@@ -94,19 +94,34 @@ after(async () => {
 
 describe('Daily Quote Generation', () => {
   test('GET /api/insights/quote - should generate quote from journal entries and follow database schema', async () => {
-    // First create some journal entries with emotional content
+    // First create some journal entries with GoEmotions format
     const testJournals = [
       {
         title: 'Grateful Day',
-        content: 'Today I feel incredibly grateful for my family and friends. Their support means everything to me. I realized that happiness comes from appreciating what we have.'
+        content: 'Today I feel incredibly grateful for my family and friends. Their support means everything to me. I realized that happiness comes from appreciating what we have.',
+        emotions: [
+          { emotion: 'gratitude', confidence: 0.89 },
+          { emotion: 'joy', confidence: 0.76 },
+          { emotion: 'love', confidence: 0.82 }
+        ]
       },
       {
         title: 'Overcoming Challenges',
-        content: 'I faced a difficult situation at work today, but I managed to stay calm and find a solution. I am learning that resilience is built through facing our fears.'
+        content: 'I faced a difficult situation at work today, but I managed to stay calm and find a solution. I am learning that resilience is built through facing our fears.',
+        emotions: [
+          { emotion: 'pride', confidence: 0.84 },
+          { emotion: 'relief', confidence: 0.78 },
+          { emotion: 'calmness', confidence: 0.72 }
+        ]
       },
       {
         title: 'Peaceful Evening',
-        content: 'Spent the evening reading and reflecting on my goals. There is something beautiful about quiet moments that help us reconnect with ourselves.'
+        content: 'Spent the evening reading and reflecting on my goals. There is something beautiful about quiet moments that help us reconnect with ourselves.',
+        emotions: [
+          { emotion: 'calmness', confidence: 0.87 },
+          { emotion: 'contentment', confidence: 0.81 },
+          { emotion: 'realization', confidence: 0.79 }
+        ]
       }
     ]
 
@@ -275,6 +290,85 @@ describe('Daily Summary Generation', () => {
     assert.strictEqual(response.body.entry_count, 5, 'Entry count should match')
     assert(response.body.key_themes.includes('growth'), 'Should include growth theme')
     assert(response.body.emotional_trends.positive === 70, 'Should have correct emotional trend')
+  })
+
+  test('GET /api/insights/summary - should generate summary from journal entries with GoEmotions format', async () => {
+    // Create journal entries that match GoEmotions dataset format
+  const testJournals = [
+    {
+      title: 'Grateful Day',
+      content: 'Today I feel incredibly grateful for my family and friends. Their support means everything to me. I realized that happiness comes from appreciating what we have.',
+      emotions: [
+        { emotion: 'gratitude', confidence: 0.89 },
+        { emotion: 'joy', confidence: 0.76 },
+        { emotion: 'love', confidence: 0.82 }
+      ]
+    },
+    {
+      title: 'Overcoming Challenges', 
+      content: 'I faced a difficult situation at work today, but I managed to stay calm and find a solution. I am learning that resilience is built through facing our fears.',
+      emotions: [
+        { emotion: 'pride', confidence: 0.84 },
+        { emotion: 'relief', confidence: 0.78 },
+        { emotion: 'approval', confidence: 0.72 }
+      ]
+    },
+    {
+      title: 'Peaceful Evening',
+      content: 'Spent the evening reading and reflecting on my goals. There is something beautiful about quiet moments that help us reconnect with ourselves.',
+      emotions: [
+        { emotion: 'neutral', confidence: 0.87 },
+        { emotion: 'approval', confidence: 0.81 },
+        { emotion: 'realization', confidence: 0.79 }
+      ]
+    }
+  ]
+
+    // Create the journal entries
+    for (const journal of testJournals) {
+      await api
+        .post('/api/journals')
+        .set('Authorization', 'Bearer mock-insights-token') 
+        .send(journal)
+        .expect(201)
+    }
+
+    // Now test the actual summary generation function
+    const { generateDailySummaryForUser } = require('../utils/services/insights')
+    const today = new Date().toISOString().split('T')[0]
+    
+    // Call the generation function directly
+    await generateDailySummaryForUser(userId, today)
+
+    // Verify summary was created in database
+    const generatedSummary = await pool.query(
+      'SELECT * FROM daily_summaries WHERE user_id = $1 AND summary_date = $2',
+      [userId, today]
+    )
+
+    assert.strictEqual(generatedSummary.rows.length, 1, 'Summary should be generated')
+    const summary = generatedSummary.rows[0]
+    
+    assert(summary.summary, 'Should have summary text')
+    assert(summary.key_themes, 'Should have key themes')
+    assert(summary.emotional_trends, 'Should have emotional trends')
+    assert.strictEqual(summary.entry_count, 5, 'Should reflect correct entry count')
+    assert(summary.analysis_period_start, 'Should have analysis period start')
+    assert(summary.analysis_period_end, 'Should have analysis period end')
+
+    // Parse JSON fields and verify structure
+    const keyThemes = JSON.parse(summary.key_themes)
+    const emotionalTrends = JSON.parse(summary.emotional_trends)
+    
+    assert(Array.isArray(keyThemes), 'Key themes should be array')
+    assert(typeof emotionalTrends === 'object', 'Emotional trends should be object')
+    
+    console.log('Generated summary:', {
+      summary: summary.summary.substring(0, 100) + '...',
+      keyThemes,
+      emotionalTrends,
+      entryCount: summary.entry_count
+    })
   })
 })
 
