@@ -76,8 +76,7 @@ async function generateDailySummaryForUser(userId, summaryDate) {
   // Generate summary via NLP service
   try {
     const response = await axios.post('/insights/daily-summary', {
-      entries: entries.rows,
-      userId: userId 
+      entries: entries.rows
     })
 
     const summaryData = response.data
@@ -115,13 +114,9 @@ async function generateDailyQuote(userId) {
       [userId, sevenDaysAgo]
     )
 
-    if (entries.rows.length === 0) {
-      return null
-    }
-
     // Call NLP service using axios
     const response = await axios.post('/insights/quote', {
-      entries: entries.rows
+      entries: entries.rows.length > 0 ? entries.rows : []
     })
 
     return response.data
