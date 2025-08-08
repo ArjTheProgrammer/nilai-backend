@@ -13,8 +13,7 @@ const originalVerifyIdToken = admin.auth().verifyIdToken
 const testUser = {
   firebaseUid: 'test-insights-uid-' + Date.now(),
   email: `insights-test-${Date.now()}@example.com`,
-  firstName: 'Insights',
-  lastName: 'Tester',
+  name: 'Insights Tester',
   username: `insightstester${Date.now()}`,
   authProvider: 'email'
 }
@@ -59,10 +58,10 @@ beforeEach(async () => {
 
   if (existingUser.rows.length === 0) {
     const result = await pool.query(
-      `INSERT INTO users (firebase_uid, first_name, last_name, username, email, auth_provider, email_verified)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO users (firebase_uid, name, username, email, auth_provider, email_verified)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
-      [testUser.firebaseUid, testUser.firstName, testUser.lastName, testUser.username, testUser.email, testUser.authProvider, true]
+      [testUser.firebaseUid, testUser.name, testUser.username, testUser.email, testUser.authProvider, true]
     )
     userId = result.rows[0].user_id
   } else {
