@@ -2,11 +2,14 @@ const cron = require('node-cron')
 const { pool } = require('../config')
 const axios = require('./axios.js')
 
-// Run every day at 12:00 AM
-cron.schedule('0 0 * * *', async () => {
-  console.log('Running daily summary generation at 12:00 AM')
-  await generateDailySummariesForAllUsers()
-})
+// Only run cron job in production/development, not during tests
+if (process.env.NODE_ENV !== 'test') {
+  // Run every day at 12:00 AM
+  cron.schedule('0 0 * * *', async () => {
+    console.log('Running daily summary generation at 12:00 AM')
+    await generateDailySummariesForAllUsers()
+  })
+}
 
 async function generateDailySummariesForAllUsers() {
   try {
