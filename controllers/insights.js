@@ -9,7 +9,6 @@ const insightsRouter = express.Router()
 insightsRouter.get('/quote', verifyToken, async (request, response) => {
   try {
     const firebaseUid = request.user.uid
-    const today = new Date().toISOString().split('T')[0]
     
     const userResult = await pool.query('SELECT user_id FROM users WHERE firebase_uid = $1', [firebaseUid])
     if (userResult.rows.length === 0) {
@@ -17,10 +16,10 @@ insightsRouter.get('/quote', verifyToken, async (request, response) => {
     }
     const userId = userResult.rows[0].user_id
 
-    // Check if quote already exists for today
+    // Check if quote already exists for today - let PostgreSQL determine "today"
     const existingQuote = await pool.query(
-      'SELECT title, quote, author, citation, explanation FROM daily_quotes WHERE user_id = $1 AND quote_date = $2',
-      [userId, today]
+      'SELECT title, quote, author, citation, explanation FROM daily_quotes WHERE user_id = $1 AND quote_date = CURRENT_DATE',
+      [userId]
     )
 
     if (existingQuote.rows.length > 0) {
@@ -30,19 +29,28 @@ insightsRouter.get('/quote', verifyToken, async (request, response) => {
     // Generate new quote
     const quote = await generateDailyQuote(userId)
     
+    console.log('Generated quote:', quote) // Add this debug line
+    
     if (!quote || !quote.quote) {
       return response.json({ 
         message: 'Start journaling to receive personalized daily quotes!' 
       })
     }
 
-    // Store the quote
+    // Store the quote - let the DEFAULT CURRENT_DATE handle the date
     await pool.query(
-      'INSERT INTO daily_quotes (user_id, title, quote, author, citation, explanation, quote_date) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-      [userId, quote.title, quote.quote, quote.author, quote.citation, quote.explanation, today]
+      'INSERT INTO daily_quotes (user_id, title, quote, author, citation, explanation) VALUES ($1, $2, $3, $4, $5, $6)',
+      [userId, quote.title, quote.quote, quote.author, quote.citation, quote.explanation]
     )
 
-    response.json(quote)
+    const stored = await pool.query(
+      'SELECT title, quote, author, citation, explanation, quote_date FROM daily_quotes WHERE user_id = $1 AND quote_date = CURRENT_DATE',
+      [userId]
+    )
+
+    console.log('Stored quote:', stored.rows[0]) // Add this debug line
+
+    response.json(stored.rows[0])
   } catch (error) {
     console.error('Error fetching daily quote:', error)
     response.status(500).json({ error: 'Failed to fetch daily quote' })
