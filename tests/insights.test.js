@@ -143,7 +143,7 @@ describe('Daily Quote Generation', () => {
     assert(response.body.title, 'Should have title field')
     assert(response.body.quote, 'Should have quote field')
     assert(response.body.explanation, 'Should have explanation field')
-    
+
     // Verify data types and constraints
     assert(typeof response.body.title === 'string', 'Title should be string')
     assert(response.body.title.length <= 255, 'Title should not exceed 255 characters')
@@ -167,18 +167,18 @@ describe('Daily Quote Generation', () => {
 
     assert.strictEqual(dbQuote.rows.length, 1, 'Quote should be stored in database')
     const storedQuote = dbQuote.rows[0]
-    
+
     const todayResult = await pool.query('SELECT CURRENT_DATE::text as today_string')
     const dbToday = todayResult.rows[0].today_string
 
     console.log('Stored date (as text):', storedQuote.quote_date_string)
     console.log('DB current date (as text):', dbToday)
 
-      assert.strictEqual(
-    storedQuote.quote_date_string, 
-    dbToday, 
-    'Quote date should match database current date'
-  )
+    assert.strictEqual(
+      storedQuote.quote_date_string,
+      dbToday,
+      'Quote date should match database current date'
+    )
   })
 
   test('GET /api/insights/quote - should return cached quote for same day', async () => {
@@ -283,41 +283,41 @@ describe('Daily Summary Generation', () => {
 
   test('GET /api/insights/summary - should generate summary from journal entries with GoEmotions format', async () => {
     // Create journal entries that match GoEmotions dataset format
-  const testJournals = [
-    {
-      title: 'Grateful Day',
-      content: 'Today I feel incredibly grateful for my family and friends. Their support means everything to me. I realized that happiness comes from appreciating what we have.',
-      emotions: [
-        { emotion: 'gratitude', confidence: 0.89 },
-        { emotion: 'joy', confidence: 0.76 },
-        { emotion: 'love', confidence: 0.82 }
-      ]
-    },
-    {
-      title: 'Overcoming Challenges', 
-      content: 'I faced a difficult situation at work today, but I managed to stay calm and find a solution. I am learning that resilience is built through facing our fears.',
-      emotions: [
-        { emotion: 'pride', confidence: 0.84 },
-        { emotion: 'relief', confidence: 0.78 },
-        { emotion: 'approval', confidence: 0.72 }
-      ]
-    },
-    {
-      title: 'Peaceful Evening',
-      content: 'Spent the evening reading and reflecting on my goals. There is something beautiful about quiet moments that help us reconnect with ourselves.',
-      emotions: [
-        { emotion: 'neutral', confidence: 0.87 },
-        { emotion: 'approval', confidence: 0.81 },
-        { emotion: 'realization', confidence: 0.79 }
-      ]
-    }
-  ]
+    const testJournals = [
+      {
+        title: 'Grateful Day',
+        content: 'Today I feel incredibly grateful for my family and friends. Their support means everything to me. I realized that happiness comes from appreciating what we have.',
+        emotions: [
+          { emotion: 'gratitude', confidence: 0.89 },
+          { emotion: 'joy', confidence: 0.76 },
+          { emotion: 'love', confidence: 0.82 }
+        ]
+      },
+      {
+        title: 'Overcoming Challenges',
+        content: 'I faced a difficult situation at work today, but I managed to stay calm and find a solution. I am learning that resilience is built through facing our fears.',
+        emotions: [
+          { emotion: 'pride', confidence: 0.84 },
+          { emotion: 'relief', confidence: 0.78 },
+          { emotion: 'approval', confidence: 0.72 }
+        ]
+      },
+      {
+        title: 'Peaceful Evening',
+        content: 'Spent the evening reading and reflecting on my goals. There is something beautiful about quiet moments that help us reconnect with ourselves.',
+        emotions: [
+          { emotion: 'neutral', confidence: 0.87 },
+          { emotion: 'approval', confidence: 0.81 },
+          { emotion: 'realization', confidence: 0.79 }
+        ]
+      }
+    ]
 
     // Create the journal entries
     for (const journal of testJournals) {
       await api
         .post('/api/journals')
-        .set('Authorization', 'Bearer mock-insights-token') 
+        .set('Authorization', 'Bearer mock-insights-token')
         .send(journal)
         .expect(201)
     }
@@ -325,7 +325,7 @@ describe('Daily Summary Generation', () => {
     // Now test the actual summary generation function
     const { generateDailySummaryForUser } = require('../utils/services/insights')
     const today = new Date().toISOString().split('T')[0]
-    
+
     // Call the generation function directly
     await generateDailySummaryForUser(userId, today)
 
@@ -337,7 +337,7 @@ describe('Daily Summary Generation', () => {
 
     assert.strictEqual(generatedSummary.rows.length, 1, 'Summary should be generated')
     const summary = generatedSummary.rows[0]
-    
+
     assert(summary.summary, 'Should have summary text')
     assert(summary.key_themes, 'Should have key themes')
     assert(summary.emotional_trends, 'Should have emotional trends')
@@ -348,10 +348,10 @@ describe('Daily Summary Generation', () => {
     // Parse JSON fields and verify structure
     const keyThemes = JSON.parse(summary.key_themes)
     const emotionalTrends = JSON.parse(summary.emotional_trends)
-    
+
     assert(Array.isArray(keyThemes), 'Key themes should be array')
     assert(typeof emotionalTrends === 'object', 'Emotional trends should be object')
-    
+
     console.log('Generated summary:', {
       summary: summary.summary.substring(0, 100) + '...',
       keyThemes,

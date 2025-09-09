@@ -9,7 +9,7 @@ const insightsRouter = express.Router()
 insightsRouter.get('/quote', verifyToken, async (request, response) => {
   try {
     const firebaseUid = request.user.uid
-    
+
     const userResult = await pool.query('SELECT user_id FROM users WHERE firebase_uid = $1', [firebaseUid])
     if (userResult.rows.length === 0) {
       return response.status(404).json({ error: 'User not found' })
@@ -28,12 +28,12 @@ insightsRouter.get('/quote', verifyToken, async (request, response) => {
 
     // Generate new quote
     const quote = await generateDailyQuote(userId)
-    
+
     console.log('Generated quote:', quote) // Add this debug line
-    
+
     if (!quote || !quote.quote) {
-      return response.json({ 
-        message: 'Start journaling to receive personalized daily quotes!' 
+      return response.json({
+        message: 'Start journaling to receive personalized daily quotes!'
       })
     }
 
@@ -62,7 +62,7 @@ insightsRouter.get('/summary', verifyToken, async (request, response) => {
   try {
     const firebaseUid = request.user.uid
     const today = new Date().toISOString().split('T')[0]
-    
+
     const userResult = await pool.query('SELECT user_id FROM users WHERE firebase_uid = $1', [firebaseUid])
     if (userResult.rows.length === 0) {
       return response.status(404).json({ error: 'User not found' })
@@ -84,7 +84,7 @@ insightsRouter.get('/summary', verifyToken, async (request, response) => {
       // Check if user has journal entries to generate summary from
       const sevenDaysAgo = new Date()
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-      
+
       const entries = await pool.query(`
         SELECT title, content, emotions, created_at 
         FROM journal_entries 
@@ -94,14 +94,14 @@ insightsRouter.get('/summary', verifyToken, async (request, response) => {
       `, [userId, sevenDaysAgo])
 
       if (entries.rows.length === 0) {
-        return response.json({ 
-          message: 'No summaries available yet. Keep journaling and check back tomorrow!' 
+        return response.json({
+          message: 'No summaries available yet. Keep journaling and check back tomorrow!'
         })
       }
 
       // Generate summary for today
       await generateDailySummaryForUser(userId, today)
-      
+
       // Fetch the newly generated summary
       const newSummary = await pool.query(`
         SELECT summary, key_themes, emotional_trends, entry_count, 
@@ -129,13 +129,13 @@ insightsRouter.get('/summary', verifyToken, async (request, response) => {
     // Check if the most recent summary is from today
     const summary = recentSummary.rows[0]
     const summaryDate = new Date(summary.summary_date).toISOString().split('T')[0]
-    
+
     // If the most recent summary is not from today, try to generate a new one
     if (summaryDate !== today) {
       // Check if user has journal entries from the past 7 days to generate summary from
       const sevenDaysAgo = new Date()
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-      
+
       const entries = await pool.query(`
         SELECT title, content, emotions, created_at 
         FROM journal_entries 
@@ -147,7 +147,7 @@ insightsRouter.get('/summary', verifyToken, async (request, response) => {
       if (entries.rows.length > 0) {
         // Generate summary for today
         await generateDailySummaryForUser(userId, today)
-        
+
         // Fetch the newly generated summary
         const newSummary = await pool.query(`
           SELECT summary, key_themes, emotional_trends, entry_count, 

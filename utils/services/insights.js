@@ -17,7 +17,7 @@ async function generateDailySummariesForAllUsers() {
     const yesterday = new Date()
     yesterday.setDate(yesterday.getDate() - 1)
     const yesterdayStr = yesterday.toISOString().split('T')[0]
-    
+
     const today = new Date().toISOString().split('T')[0]
 
     // Find users with journal entries from yesterday
@@ -111,7 +111,7 @@ async function generateDailyQuote(userId) {
     // Get last 7 days of entries
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-    
+
     const entries = await pool.query(
       'SELECT title, content, emotions, created_at FROM journal_entries WHERE user_id = $1 AND created_at >= $2 ORDER BY created_at DESC',
       [userId, sevenDaysAgo]
