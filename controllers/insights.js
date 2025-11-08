@@ -191,4 +191,50 @@ insightsRouter.get('/summary', verifyToken, async (request, response) => {
   }
 })
 
+
+insightsRouter.get('/topEmotions', verifyToken, async (request, response) => {
+  try {
+    const firebaseUid = request.user.uid
+
+    // Get user ID
+    const userResult = await pool.query('SELECT user_id FROM users WHERE firebase_uid = $1', [firebaseUid])
+    if (userResult.rows.length === 0) {
+      return response.status(404).json({ error: 'User not found' })
+    }
+    const userId = userResult.rows[0].user_id
+
+    // Get top 5 emotions from last 30 days
+    const emotionCounts = await pool.query(`
+      WITH unnested_emotions AS (
+        SELECT 
+          jsonb_array_elements(emotions) ->> 'emotion' as emotion
+        FROM journal_entries
+        WHERE user_id = $1
+        AND created_at >= CURRENT_DATE - INTERVAL '30 days'
+      )
+      SELECT 
+        emotion,
+        COUNT(*) as count 
+      FROM unnested_emotions
+      GROUP BY emotion
+      ORDER BY count DESC
+      LIMIT 5
+    `, [userId])
+
+    if (emotionCounts.rows.length === 0) {
+      return response.json({
+        message: 'No journal entries found in the last 30 days'
+      })
+    }
+
+    response.json({
+      topEmotions: emotionCounts.rows
+    })
+
+  } catch (error) {
+    console.error('Error fetching emotion analysis:', error)
+    response.status(500).json({ error: 'Failed to fetch emotion analysis' })
+  }
+})
+
 module.exports = insightsRouter
